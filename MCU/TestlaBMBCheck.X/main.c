@@ -73,23 +73,22 @@ void ShowBmsData(struct BmsData bms_data) {
     }
 }
 
-void ConnectToBms(uint8_t moduleId) {
+void ConnectToBms(uint8_t module_id) {
     if (!ResetBoard()) {
         LcdPuts(0, 0, "Reset failed.");
         Halt();
     }
     
-    if (!SetNewBoardId(moduleId)) {
+    if (!SetNewBoardId(module_id)) {
         LcdPuts(0, 0, "Set ID failed.");
         Halt();
     }
 
     uint8_t id = FindBoardId();
-    
-    char s[10];
-    HexStr(id, s);
-    LcdPuts(0, 0, "Module ID:");
-    LcdPuts(11, 0, s);
+    if (id != module_id) {
+        LcdPuts(0, 0, "Wrong ID.");
+        Halt();
+    }
 }
 
 void main(void) {

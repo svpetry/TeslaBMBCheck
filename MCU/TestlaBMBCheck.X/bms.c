@@ -62,9 +62,6 @@ bool SetNewBoardId(uint8_t id) {
     payload[1] = 0;
     payload[2] = 1;
 
-    payload[0] = 0;
-    payload[1] = 0;
-    payload[2] = 1;
     retLen = BMS_SendDataWithReply(payload, 3, 0, buff, 4);
     if (retLen == 4) {
         if (buff[0] == 0x80 && buff[1] == 0 && buff[2] == 1) {
@@ -95,7 +92,7 @@ static uint16_t CalcTemp(uint8_t buff[], int index) {
     return (uint16_t)(tempCalc * 10.0f);
 }
 
-struct BmsData ReadBmsData(uint8_t moduleId) {
+struct BmsData ReadBmsData(uint8_t module_id) {
     struct BmsData data;
     uint8_t payload[4];
     uint8_t buff[50];
@@ -107,7 +104,7 @@ struct BmsData ReadBmsData(uint8_t moduleId) {
     for (int i = 0; i < 6; i++) data.v[i] = 0;
     for (int i = 0; i < 2; i++) data.t[i] = 0;
     
-    payload[0] = (uint8_t)(moduleId << 1);
+    payload[0] = (uint8_t)(module_id << 1);
     
     payload[1] = REG_ADC_CTRL;
     payload[2] = 0b00111101; // ADC Auto mode, read every ADC input we can (Both Temps, Pack, 6 cells)
@@ -130,7 +127,7 @@ struct BmsData ReadBmsData(uint8_t moduleId) {
     // 18 data bytes, address, command, length, and CRC = 22 bytes returned
     // Also validate CRC to ensure we didn't get garbage data.
     if ((retLen == 22) && (buff[21] == calcCRC)) {
-        if (buff[0] == (moduleId << 1) && buff[1] == REG_GPAI && buff[2] == 0x12) { // Also ensure this is actually the reply to our intended query
+        if (buff[0] == (module_id << 1) && buff[1] == REG_GPAI && buff[2] == 0x12) { // Also ensure this is actually the reply to our intended query
             
             // payload is 2 bytes QPAI, 2 bytes for each of 6 cell voltages, 2 bytes for each of two temperatures (18 bytes of data)
             data.mv = (uint16_t)((buff[3] * 256 + buff[4]) * 0.002034609f * 1000.0f);
