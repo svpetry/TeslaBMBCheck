@@ -16,6 +16,7 @@
 uint8_t FindBoardId(void);
 bool ResetBoard(void);
 bool SetNewBoardId(uint8_t id);
+struct BmsData ReadBmsData(uint8_t moduleId);
 
 #endif	/* BMS_H */
 

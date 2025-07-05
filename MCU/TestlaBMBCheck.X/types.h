@@ -10,5 +10,11 @@
 
 typedef char bool;
 
+struct BmsData {
+    uint16_t v[6]; // Cell voltage in mV
+    uint16_t t[2]; // Temperature * 10 in degC
+    uint16_t mv;   // Module voltage in mV
+};
+
 #endif	/* TYPES_H */
 

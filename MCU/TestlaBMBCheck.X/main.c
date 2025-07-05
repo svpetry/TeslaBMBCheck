@@ -39,12 +39,11 @@
 #include "lcd.h"
 #include "uart.h"
 #include "utils.h"
+#include "bms-util.h"
 #include "bms.h"
+#include "types.h"
 
-struct BmsData {
-    uint16_t v[6];
-    uint16_t t[2];
-};
+#define MODULE_ID 3
 
 void Initialize(void) {
     TRISC = 0b10000000;
@@ -74,25 +73,13 @@ void ShowBmsData(struct BmsData bms_data) {
     }
 }
 
-void ConnectToBms() {
-    
-}
-
-struct BmsData ReadBmsData() {
-    
-}
-
-void main(void) {
-    Initialize();
-    
-    __delay_ms(3000);
-
+void ConnectToBms(uint8_t moduleId) {
     if (!ResetBoard()) {
         LcdPuts(0, 0, "Reset failed.");
         Halt();
     }
-
-    if (!SetNewBoardId(3)) {
+    
+    if (!SetNewBoardId(moduleId)) {
         LcdPuts(0, 0, "Set ID failed.");
         Halt();
     }
@@ -103,17 +90,21 @@ void main(void) {
     HexStr(id, s);
     LcdPuts(0, 0, "Module ID:");
     LcdPuts(11, 0, s);
+}
+
+void main(void) {
+    Initialize();
     
-    while (1) ;
+    __delay_ms(3000);
     
     LcdPuts(0, 1, "    Connecting...   ");
     
-    ConnectToBms();
+    ConnectToBms(MODULE_ID);
     
     LcdClear();
     
     while (1) {
-        struct BmsData data = ReadBmsData();
+        struct BmsData data = ReadBmsData(MODULE_ID);
         ShowBmsData(data);
         __delay_ms(1000);
     }

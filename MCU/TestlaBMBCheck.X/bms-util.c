@@ -3,7 +3,14 @@
 #include "types.h"
 #include "uart.h"
 
-static uint8_t BMS_GenCRC(uint8_t *input, int lenInput) {
+static void BMS_Delay(int time) {
+    int d = time / 10;
+    for (int i = 0; i < d; i++) __delay_ms(10);
+    d = time % 10;
+    for (int i = 0; i < d; i++) __delay_ms(1);
+}
+
+uint8_t BMS_GenCRC(uint8_t *input, int lenInput) {
     uint8_t generator = 0x07;
     uint8_t crc = 0;
 
@@ -22,27 +29,12 @@ static uint8_t BMS_GenCRC(uint8_t *input, int lenInput) {
     return crc;
 }
 
-static void BMS_Delay(int time) {
-    int d = time / 10;
-    for (int i = 0; i < d; i++) __delay_ms(10);
-    d = time % 10;
-    for (int i = 0; i < d; i++) __delay_ms(1);
-}
-
 void BMS_ShortDelay(void) {
     __delay_ms(10);
 }
 
 void BMS_LongDelay(void) {
     __delay_ms(100);
-}
-
-void BMS_WaitForData(int timeout) {
-    timeout /= 10;
-    while (timeout > 0 && !UART_DataAvailable()) {
-        __delay_ms(10);
-        timeout--;
-    }
 }
 
 void BMS_SendData(uint8_t *data, uint8_t dataLen, bool isWrite) {
@@ -53,39 +45,18 @@ void BMS_SendData(uint8_t *data, uint8_t dataLen, bool isWrite) {
     UART_WriteArray(&data[1], dataLen - 1);  //assumes that there are at least 2 bytes sent every time. There should be, addr and cmd at the least.
     data[0] = addrByte;
     if (isWrite) UART_Write(BMS_GenCRC(data, dataLen));        
-/*
-    if (Logger::isDebug()) {
-        SERIALCONSOLE.print("Sending: ");
-        SERIALCONSOLE.print(addrByte, HEX);
-        SERIALCONSOLE.print(" ");
-        for (int x = 1; x < dataLen; x++) {
-            SERIALCONSOLE.print(data[x], HEX);
-            SERIALCONSOLE.print(" ");
-        }
-        if (isWrite) SERIALCONSOLE.print(BMS_GenCRC(data, dataLen), HEX);
-        SERIALCONSOLE.println();
-    }
-*/
     data[0] = orig;
 }
 
 int BMS_GetReply(uint8_t *data, int maxLen) { 
     int numBytes = 0; 
-    //if (Logger::isDebug()) SERIALCONSOLE.print("Reply: ");
-    while (numBytes < maxLen) {
+    while (UART_DataAvailable() && numBytes < maxLen) {
         data[numBytes] = UART_Read();
-/*
-        if (Logger::isDebug()) {
-            SERIALCONSOLE.print(data[numBytes], HEX);
-            SERIALCONSOLE.print(" ");
-        }
-*/
         numBytes++;
     }
     if (maxLen == numBytes) {
         while (UART_DataAvailable()) UART_Read();
     }
-    //if (Logger::isDebug()) SERIALCONSOLE.println();
     return numBytes;
 }
 

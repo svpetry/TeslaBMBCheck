@@ -34,9 +34,9 @@
 
 #define RESET_MAGIC_CODE    0xA5
 
+uint8_t BMS_GenCRC(uint8_t *input, int lenInput);
 void BMS_ShortDelay(void);
 void BMS_LongDelay(void);
-void BMS_WaitForData(int timeout);
 void BMS_SendData(uint8_t *data, uint8_t dataLen, bool isWrite);
 int BMS_GetReply(uint8_t *data, int maxLen);
 int BMS_SendDataWithReply(uint8_t *data, uint8_t dataLen, bool isWrite, uint8_t *retData, int retLen);
