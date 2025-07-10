@@ -5,7 +5,7 @@
 
 #define LCD_PORT LATB
 #define LCD_RS 0b00010000
-#define LCD_E 0b00100000
+#define LCD_E  0b00100000
 
 static void LcdDelayLong() {
     __delay_ms(100);
