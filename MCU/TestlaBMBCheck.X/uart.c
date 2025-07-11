@@ -1,6 +1,6 @@
 #include <xc.h>
 #include <pic18.h>
-#include <pic18f2525.h>
+#include <pic18f2480.h>
 #include "base.h"
 
 #include "uart.h"
@@ -16,7 +16,7 @@ static inline uint8_t rx_count(void) {
 }
 
 void __interrupt() ISR(void) {
-    // ? RX interrupt? ??????????????????????????????
+    // RX interrupt
     if (PIR1bits.RCIF && PIE1bits.RCIE) {
 
         // read received byte

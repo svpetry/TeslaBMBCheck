@@ -2,38 +2,37 @@
  * File:   main.c
  * Author: svpet
  *
- * Created on 30. November 2024, 10:10
  * 
  * pin layout:
- * RA0: 
- * RA1: 
- * RA2: 
- * RA3: 
- * RA4: 
- * RA5: 
- * RA6: 
- * RA7: 
- * RC0: 
- * RC1: 
- * RC2: 
- * RC3: 
- * RC4: 
- * RC5: 
- * RC6: 
- * RC7: 
- * RE3: 
- * RB0: 
- * RB1: 
- * RB2: 
- * RB3: 
- * RB4: 
- * RB5: 
- * RB6: PGC
- * RB7: PGD
+ * RA0: SW1
+ * RA1: SW2
+ * RA2: -
+ * RA3: -
+ * RA4: -
+ * RA5: -
+ * RA6: OSC2
+ * RA7: OSC1
+ * RC0: BMS_POWER_ON (0 = active)
+ * RC1: LCD BACKLIGHT
+ * RC2: INFO LED
+ * RC3: -
+ * RC4: -
+ * RC5: -
+ * RC6: TX
+ * RC7: RX
+ * RE3: VPP (ICSP)
+ * RB0: LCD_D4
+ * RB1: LCD_D5
+ * RB2: LCD_D6
+ * RB3: LCD_D7
+ * RB4: LCD_RS
+ * RB5: LCD_E
+ * RB6: PGC (ICSP)
+ * RB7: PGD (ICSP)
  */
 
 #include <xc.h>
-#include <pic18f2525.h>
+#include <pic18f2480.h>
 #include "config.h"
 #include "base.h"
 #include "lcd.h"
@@ -46,10 +45,12 @@
 #define MODULE_ID 3
 
 void Initialize(void) {
+    TRISA = 0b11000011;
+    LATA = 0;
+    TRISB = 0b00000000;
+    LATB = 0;
     TRISC = 0b10000000;
     LATC = 0;
-    TRISB = 0;
-    LATB = 0;
     
     UART_Init(612500UL);
 

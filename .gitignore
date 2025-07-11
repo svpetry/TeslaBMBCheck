@@ -4,3 +4,6 @@ Board/TeslaBMBCheck/TeslaBMBCheck-backups/
 Board/TeslaBMBCheck/fp-info-cache
 MCU/TestlaBMBCheck.X/nbproject/private/
 Board/TeslaBMBCheck/~*
+Tools/MakeSHTable/MakeSHTable/obj/
+Tools/MakeSHTable/MakeSHTable/bin/
+Tools/MakeSHTable/.vs/
