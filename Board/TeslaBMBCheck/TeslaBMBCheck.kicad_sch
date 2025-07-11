@@ -6,8 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "TeslaBMBChecker")
-		(date "2025-07-10")
-		(rev "0.1")
+		(date "2025-07-11")
+		(rev "1.0")
 	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x05"
@@ -5470,16 +5470,6 @@
 			(justify left bottom)
 		)
 		(uuid "fe8a9920-b40b-4b4c-b738-522c6e00a998")
-	)
-	(label "LED+"
-		(at 257.81 99.06 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "febe6683-5073-4595-9ad8-1dbb2052ec75")
 	)
 	(global_label "BACKLT"
 		(shape output)
