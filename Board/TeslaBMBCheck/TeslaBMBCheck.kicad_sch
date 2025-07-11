@@ -5331,6 +5331,16 @@
 		)
 		(uuid "4959028c-ebad-4482-a028-18296740ddef")
 	)
+	(label "LED-"
+		(at 257.81 101.6 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4fa79f20-de0a-4b0d-bb5b-a266258adcc7")
+	)
 	(label "CC2"
 		(at 53.34 163.83 0)
 		(effects
@@ -5362,7 +5372,7 @@
 		(uuid "6757fb77-0d53-4989-98b0-18bf6dddbe20")
 	)
 	(label "LCD_RS"
-		(at 207.01 127 0)
+		(at 207.01 124.46 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5392,7 +5402,7 @@
 		(uuid "a051114b-87b4-482f-9f12-8d4584fe25be")
 	)
 	(label "LCD_E"
-		(at 207.01 124.46 0)
+		(at 207.01 127 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5460,6 +5470,16 @@
 			(justify left bottom)
 		)
 		(uuid "fe8a9920-b40b-4b4c-b738-522c6e00a998")
+	)
+	(label "LED+"
+		(at 257.81 99.06 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "febe6683-5073-4595-9ad8-1dbb2052ec75")
 	)
 	(global_label "BACKLT"
 		(shape output)
