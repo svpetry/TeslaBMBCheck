@@ -1,7 +1,11 @@
 #include "utils.h"
 #include <pic18.h>
 
-void VoltageToStr(char *s, uint16_t voltage) {
+void VoltageToStr(char *s, uint16_t voltage, bool decades) {
+    if (decades) {
+        *s++ = '0' + (char)(voltage / 10000);
+        voltage %= 10000;
+    }
     *s++ = '0' + (char)(voltage / 1000);
     voltage %= 1000;
     *s++ = '.';
@@ -32,7 +36,3 @@ void HexStr(uint8_t value, char *str) {
     *str = 0;
 }
 */
-
-void Halt(void) {
-    while (1) ;
-}

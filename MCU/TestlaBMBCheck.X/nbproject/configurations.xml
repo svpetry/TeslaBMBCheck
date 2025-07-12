@@ -12,6 +12,7 @@
       <itemPath>bms-util.h</itemPath>
       <itemPath>types.h</itemPath>
       <itemPath>bms.h</itemPath>
+      <itemPath>board.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -26,6 +27,7 @@
       <itemPath>uart.c</itemPath>
       <itemPath>bms-util.c</itemPath>
       <itemPath>bms.c</itemPath>
+      <itemPath>board.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
