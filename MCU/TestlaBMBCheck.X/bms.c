@@ -70,7 +70,7 @@ static const uint16_t temp_table[1024] = {
     535, 536, 536, 537, 538, 538, 539, 539, 540, 541, 541, 542, 542, 543, 544
 };
 
-static uint8_t shunt_bits = 0;
+static uint8_t balancer_bits = 0;
 
 
 uint8_t FindBoardId() {
@@ -99,7 +99,7 @@ bool ResetBoard() {
     uint8_t payload[3];
     uint8_t buff[8];
     
-    shunt_bits = 0;
+    balancer_bits = 0;
     
     for (int i = 0; i < 8; i++) {
         buff[i] = 0;
@@ -147,6 +147,8 @@ bool SetNewBoardId(uint8_t id) {
 }
 
 /*
+ * Old method with Steinhart-Hart formula.
+ * 
 static uint16_t CalcTemp(uint8_t buff[], int index) {
     float tempCalc;
     float tempTemp;
@@ -174,16 +176,12 @@ static uint16_t CalcTemp(uint8_t buff[], int index) {
 }
  
 struct BmsData ReadBmsData(uint8_t module_id) {
-    struct BmsData data;
+    struct BmsData data = {0};
     uint8_t payload[4];
     uint8_t buff[50];
     uint8_t calcCRC;
     int retLen;
     uint16_t cellVolt;
-    
-    data.mv = 0;
-    for (int i = 0; i < 6; i++) data.v[i] = 0;
-    for (int i = 0; i < 2; i++) data.t[i] = 0;
     
     payload[0] = (uint8_t)(module_id << 1);
     
@@ -225,13 +223,16 @@ struct BmsData ReadBmsData(uint8_t module_id) {
     return data;
 }
 
-void EnableShunt(uint8_t module_id, uint8_t cell_id, bool state) {
+void EnableBalancer(uint8_t module_id, uint8_t cell_id, bool state) {
     if (state) {
-        shunt_bits |= 1 << cell_id;
+        balancer_bits |= 1 << cell_id;
     } else {
-        shunt_bits &= ~(1 << cell_id);
+        balancer_bits &= ~(1 << cell_id);
     }
-    
+    EnableBmsBalancers(module_id);
+}
+
+void EnableBmsBalancers(uint8_t module_id) {
     uint8_t payload[4];
     uint8_t buff[30];
 
@@ -244,9 +245,8 @@ void EnableShunt(uint8_t module_id, uint8_t cell_id, bool state) {
 
     payload[0] = (uint8_t)(module_id << 1);
     payload[1] = REG_BAL_CTRL;
-    payload[2] = shunt_bits; // write balance state to register
+    payload[2] = balancer_bits; // write balance state to register
     BMS_SendData(payload, 3, 1);
     BMS_ShortDelay();
     BMS_GetReply(buff, 30);
-    
 }

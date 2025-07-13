@@ -94,9 +94,9 @@ void DisconnectBms() {
 void ShowBmsData(struct BmsData bms_data, bool show_temp) {
     char s[10];
     
-    for (uint8_t i = 0; i < 6; i++) {
-        VoltageToStr(s, bms_data.v[i], 0);
-        LcdPuts((i % 3) * 7, i / 3, s);
+    for (uint8_t cell = 0; cell < 6; cell++) {
+        VoltageToStr(s, bms_data.v[cell], 0);
+        LcdPuts((cell % 3) * 7, cell / 3, s);
     }
     
     if (show_temp) {
@@ -122,10 +122,9 @@ void ShowStatus() {
 }
 
 void ShowBalanceMarker(uint8_t cell, bool state) {
-    if (state)
-        LcdPuts((cell % 3) * 7 + 5, cell / 3, "\0x09"); // arrow down
-    else
-        LcdPuts((cell % 3) * 7 + 5, cell / 3, " ");
+    uint8_t col = (cell % 3) * 7 + 5;
+    uint8_t row = cell / 3;
+    LcdPuts(col, row, state ? "\0x09" : " "); // arrow down
 }
 
 void Balance(uint16_t voltage) {
@@ -135,47 +134,57 @@ void Balance(uint16_t voltage) {
     
     struct BmsData data = ReadBmsData(MODULE_ID);
     ShowBmsData(data, 0);
-    for (uint8_t i = 0; i < 6; i++) {
-        if (data.v[i] > voltage) {
-            shunts[i] = 1;
-            EnableShunt(MODULE_ID, i, 1);
+    for (uint8_t cell = 0; cell < 6; cell++) {
+        if (data.v[cell] > voltage) {
+            shunts[cell] = 1;
+            EnableBalancer(MODULE_ID, cell, 1);
         } else {
-            shunts[i] = 0;
+            shunts[cell] = 0;
         }
     }
     
     LcdPuts(10, 3, "Balancing");
     
+    int seconds = 0;
     while (!GetBtnState(0) && !GetBtnState(1)) {
         data = ReadBmsData(MODULE_ID);
         ShowBmsData(data, 0);
         
         int count = 0;
-        for (uint8_t i = 0; i < 6; i++) {
-            if (shunts[i]) {
+        for (uint8_t cell = 0; cell < 6; cell++) {
+            if (shunts[cell]) {
                 count++;
-                ShowBalanceMarker(i, 1);
-                if (data.v[i] <= voltage) {
-                    shunts[i] = 0;
-                    EnableShunt(MODULE_ID, i, 0);
+                ShowBalanceMarker(cell, 1);
+                if (data.v[cell] <= voltage) {
+                    shunts[cell] = 0;
+                    EnableBalancer(MODULE_ID, cell, 0);
+                    seconds = 0;
                 }
             }
+        }
+        
+        if (seconds == 60) {
+            // TODO check if really needed.
+            EnableBmsBalancers(MODULE_ID);
+            seconds = 0;
         }
         
         if (count == 0)
             LcdPuts(10, 3, "Finished ");
         
         __delay_ms(500);
-        
-        for (uint8_t i = 0; i < 6; i++)
-            ShowBalanceMarker(i, 0);
+
+        for (uint8_t cell = 0; cell < 6; cell++)
+            ShowBalanceMarker(cell, 0);
 
         __delay_ms(500);
+
+        seconds++;
     }
 
-    for (uint8_t i = 0; i < 6; i++) {
-        if (shunts[i])
-            EnableShunt(MODULE_ID, i, 0);
+    for (uint8_t cell = 0; cell < 6; cell++) {
+        if (shunts[cell])
+            EnableBalancer(MODULE_ID, cell, 0);
     }
     
     WaitForButtonPressed();
@@ -215,6 +224,11 @@ uint16_t InputVoltage() {
             pos++;
     } while (pos < 4);
     
+    if (voltage > 4175)
+        voltage = 4175;
+    if (voltage < 3200)
+        voltage = 3200;
+    
     return (uint16_t)voltage;
 }
 
@@ -229,7 +243,7 @@ void MainMenu() {
             ConnectToBms(MODULE_ID);
             if (!connected) {
                 LcdPuts(0, 1, "Connection failed.  ");
-                while (!GetBtnState(1)) ;
+                WaitForButtonPressed();
             }
         } else {
             
@@ -251,8 +265,8 @@ void MainMenu() {
                 }
             }
             
-            WaitButtonsReleased();
             LcdClear();
+            WaitButtonsReleased();
             
             switch (menu_idx) {
                 case 0: {
