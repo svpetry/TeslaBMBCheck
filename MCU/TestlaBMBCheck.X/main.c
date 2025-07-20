@@ -33,6 +33,7 @@
 
 #include <xc.h>
 #include <pic18f2480.h>
+#include <string.h>
 #include "config.h"
 #include "base.h"
 #include "lcd.h"
@@ -92,7 +93,7 @@ void DisconnectBms() {
 }
 
 void ShowBmsData(struct BmsData bms_data, bool show_temp) {
-    char s[10];
+    char s[8];
     
     for (uint8_t cell = 0; cell < 6; cell++) {
         VoltageToStr(s, bms_data.v[cell], 0);
@@ -106,7 +107,7 @@ void ShowBmsData(struct BmsData bms_data, bool show_temp) {
         }
     } else {
         VoltageToStr(s, bms_data.mv, 1);
-        LcdPuts(0, 3, s);
+        LcdPuts(1, 3, s);
     }
 }
 
@@ -124,13 +125,17 @@ void ShowStatus() {
 void ShowBalanceMarker(uint8_t cell, bool state) {
     uint8_t col = (cell % 3) * 7 + 5;
     uint8_t row = cell / 3;
-    LcdPuts(col, row, state ? "\0x09" : " "); // arrow down
+    LcdPuts(col, row, state ? "\0x15" : " "); // double arrow down
 }
 
 void Balance(uint16_t voltage) {
     LcdClear();
 
     bool shunts[6];
+    
+    char s[8];
+    VoltageToStr(s, voltage, 0);
+    LcdPuts(14, 3, s);
     
     struct BmsData data = ReadBmsData(MODULE_ID);
     ShowBmsData(data, 0);
@@ -142,8 +147,6 @@ void Balance(uint16_t voltage) {
             shunts[cell] = 0;
         }
     }
-    
-    LcdPuts(10, 3, "Balancing");
     
     int seconds = 0;
     while (!GetBtnState(0) && !GetBtnState(1)) {
@@ -170,7 +173,7 @@ void Balance(uint16_t voltage) {
         }
         
         if (count == 0)
-            LcdPuts(10, 3, "Finished ");
+            LcdPuts(0, 2, "Finished");
         
         __delay_ms(500);
 
@@ -187,6 +190,7 @@ void Balance(uint16_t voltage) {
             EnableBalancer(MODULE_ID, cell, 0);
     }
     
+    LcdClear();
     WaitForButtonPressed();
 }
 
@@ -197,12 +201,13 @@ uint16_t InputVoltage() {
     
     int voltage = 0;
     int factor = 1000;
-    char s[2] = {0, 0};
+    char s[8];
     uint8_t pos = 0;
     do {
         WaitButtonsReleased();
-        LcdPuts(3, 3, "     ");
-        LcdPuts(3 + pos, 3, "^");
+        strcpy(s, "     ");
+        s[pos] = '^';
+        LcdPuts(3, 3, s);
         
         char digit = 0;
         while (!GetBtnState(0)) {
@@ -210,6 +215,7 @@ uint16_t InputVoltage() {
             if (GetBtnState(1)) {
                 digit = (digit + 1) % 10;
                 s[0] = '0' + digit;
+                s[1] = 0;
                 LcdPuts(3 + pos, 2, s);
                 WaitButtonsReleased();
             }

@@ -1,8 +1,8 @@
 #include "utils.h"
 #include <pic18.h>
 
-void VoltageToStr(char *s, uint16_t voltage, bool decades) {
-    if (decades) {
+void VoltageToStr(char *s, uint16_t voltage, bool pack_voltage) {
+    if (pack_voltage) {
         *s++ = '0' + (char)(voltage / 10000);
         voltage %= 10000;
     }
@@ -12,8 +12,10 @@ void VoltageToStr(char *s, uint16_t voltage, bool decades) {
     *s++ = '0' + (char)(voltage / 100);
     voltage %= 100;
     *s++ = '0' + (char)(voltage / 10);
-    voltage %= 10;
-    *s++ = '0' + (char)voltage;
+    if (!pack_voltage) {
+        voltage %= 10;
+        *s++ = '0' + (char)voltage;
+    }
     *s = 0;
 }
 
