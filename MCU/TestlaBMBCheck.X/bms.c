@@ -222,3 +222,31 @@ struct BmsData ReadBmsData(uint8_t module_id) {
   
     return data;
 }
+
+void EnableBalancer(uint8_t module_id, uint8_t cell_id, bool state) {
+    if (state) {
+        balancer_bits |= 1 << cell_id;
+    } else {
+        balancer_bits &= ~(1 << cell_id);
+    }
+    EnableBmsBalancers(module_id);
+}
+
+void EnableBmsBalancers(uint8_t module_id) {
+    uint8_t payload[4];
+    uint8_t buff[30];
+
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[1] = REG_BAL_TIME;
+    payload[2] = 60; // 60 second balance limit, if not triggered to balance it will stop after 5 seconds
+    BMS_SendData(payload, 3, 1);
+    BMS_ShortDelay();
+    BMS_GetReply(buff, 30);
+
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[1] = REG_BAL_CTRL;
+    payload[2] = balancer_bits; // write balance state to register
+    BMS_SendData(payload, 3, 1);
+    BMS_ShortDelay();
+    BMS_GetReply(buff, 30);
+}

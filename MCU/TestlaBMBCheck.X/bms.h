@@ -16,7 +16,9 @@
 uint8_t FindBoardId(void);
 bool ResetBoard(void);
 bool SetNewBoardId(uint8_t id);
-struct BmsData ReadBmsData(uint8_t moduleId);
+struct BmsData ReadBmsData(uint8_t module_id);
+void EnableBalancer(uint8_t module_id, uint8_t cell_id, bool state);
+void EnableBmsBalancers(uint8_t module_id);
 
 #endif	/* BMS_H */
 

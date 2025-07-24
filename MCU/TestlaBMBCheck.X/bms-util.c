@@ -2,6 +2,7 @@
 #include "base.h"
 #include "types.h"
 #include "uart.h"
+#include "board.h"
 
 static void BMS_Delay(int time) {
     int d = time / 10;
@@ -38,6 +39,8 @@ void BMS_LongDelay(void) {
 }
 
 void BMS_SendData(uint8_t *data, uint8_t dataLen, bool isWrite) {
+    SetInfoLed(1);
+    
     uint8_t orig = data[0];
     uint8_t addrByte = data[0];
     if (isWrite) addrByte |= 1;
@@ -46,9 +49,13 @@ void BMS_SendData(uint8_t *data, uint8_t dataLen, bool isWrite) {
     data[0] = addrByte;
     if (isWrite) UART_Write(BMS_GenCRC(data, dataLen));        
     data[0] = orig;
+
+    SetInfoLed(0);
 }
 
-int BMS_GetReply(uint8_t *data, int maxLen) { 
+int BMS_GetReply(uint8_t *data, int maxLen) {
+    SetInfoLed(1);
+
     int numBytes = 0; 
     while (UART_DataAvailable() && numBytes < maxLen) {
         data[numBytes] = UART_Read();
@@ -57,6 +64,8 @@ int BMS_GetReply(uint8_t *data, int maxLen) {
     if (maxLen == numBytes) {
         while (UART_DataAvailable()) UART_Read();
     }
+
+    SetInfoLed(0);
     return numBytes;
 }
 
