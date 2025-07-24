@@ -15,9 +15,9 @@ void WaitForButtonPressed() {
 
 bool GetBtnState(uint8_t id) {
     if (id == 0)
-        return PORTAbits.RA0;
+        return !PORTAbits.RA0;
     else
-        return PORTAbits.RA1;
+        return !PORTAbits.RA1;
 }
 
 void SetInfoLed(bool state) {
