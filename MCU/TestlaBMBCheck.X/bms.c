@@ -70,9 +70,6 @@ static const uint16_t temp_table[1024] = {
     535, 536, 536, 537, 538, 538, 539, 539, 540, 541, 541, 542, 542, 543, 544
 };
 
-static uint8_t balancer_bits = 0;
-
-
 uint8_t FindBoardId() {
     uint8_t payload[3];
     uint8_t buff[8];
@@ -98,8 +95,6 @@ uint8_t FindBoardId() {
 bool ResetBoard() {
     uint8_t payload[3];
     uint8_t buff[8];
-    
-    balancer_bits = 0;
     
     for (int i = 0; i < 8; i++) {
         buff[i] = 0;
@@ -223,16 +218,7 @@ struct BmsData ReadBmsData(uint8_t module_id) {
     return data;
 }
 
-void EnableBalancer(uint8_t module_id, uint8_t cell_id, bool state) {
-    if (state) {
-        balancer_bits |= 1 << cell_id;
-    } else {
-        balancer_bits &= ~(1 << cell_id);
-    }
-    EnableBmsBalancers(module_id);
-}
-
-void EnableBmsBalancers(uint8_t module_id) {
+void EnableBmsBalancers(uint8_t module_id, uint8_t balancer_bits) {
     uint8_t payload[4];
     uint8_t buff[30];
 
