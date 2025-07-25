@@ -11,7 +11,7 @@
 #include "types.h"
 
 #define MAX_MODULE_ADDR 63
-#define MAX_ATTEMPTS 1000
+#define MAX_ATTEMPTS 5
 
 uint8_t FindBoardId(void);
 bool ResetBoard(void);

@@ -39,6 +39,7 @@ void __interrupt() ISR(void) {
 
 void UART_Init(uint32_t baudrate) {
     // disable analog on all pins
+    ADCON0 = 0x00;
     ADCON1 = 0x0F;
     
     // 16-bit BRG, high-speed mode
@@ -70,7 +71,7 @@ void UART_Init(uint32_t baudrate) {
 }
 
 void UART_Write(uint8_t data) {
-    while (!PIR1bits.TXIF) ;  // Wait until TXREG is empty
+    while (!TXSTAbits.TRMT) ;  // Wait until TXREG is empty
     TXREG = data;             // Send byte
 }
 

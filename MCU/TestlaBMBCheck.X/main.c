@@ -45,7 +45,7 @@
 #include "types.h"
 
 #define MODULE_ID 3
-#define BMS_POWER_ON_DELAY 3000
+#define BMS_POWER_ON_DELAY 5000
 
 bool connected = 0;
 
@@ -71,6 +71,7 @@ void ConnectToBms(uint8_t module_id) {
     
     SetBmsPower(1);
     __delay_ms(BMS_POWER_ON_DELAY);
+    
     if (!ResetBoard()) {
         SetBmsPower(0);
         return;
@@ -125,7 +126,7 @@ void ShowStatus() {
 void ShowBalanceMarker(uint8_t cell, bool state) {
     uint8_t col = (cell % 3) * 7 + 5;
     uint8_t row = cell / 3;
-    LcdPuts(col, row, state ? "\0x15" : " "); // double arrow down
+    LcdPuts(col, row, state ? "!" : " "); // double arrow down
 }
 
 void Balance(uint16_t voltage) {
@@ -228,7 +229,7 @@ uint16_t InputVoltage() {
             pos = 2;
         else
             pos++;
-    } while (pos < 4);
+    } while (pos < 5);
     
     if (voltage > 4175)
         voltage = 4175;
@@ -245,7 +246,12 @@ void MainMenu() {
         
         if (!connected) {
             LcdPuts(0, 1, "Press SW2 to connect");
-            while (!GetBtnState(1)) ;
+            while (!GetBtnState(1)) {
+                SetLcdBacklight(0);
+                __delay_ms(4);
+                SetLcdBacklight(1);
+                __delay_ms(1);
+            }
             ConnectToBms(MODULE_ID);
             if (!connected) {
                 LcdPuts(0, 1, "Connection failed.  ");

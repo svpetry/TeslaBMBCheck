@@ -8,11 +8,11 @@
 #define LCD_E  0b00100000
 
 static void LcdDelayLong() {
-    __delay_ms(100);
+    __delay_ms(80);
 }
 
 static void LcdDelayShort() {
-    __delay_ms(10);
+    __delay_us(200);
 }
 
 static void LcdCmd(uint8_t cmd) {
