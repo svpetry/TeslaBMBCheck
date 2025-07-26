@@ -6,8 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "TeslaBMBChecker")
-		(date "2025-07-11")
-		(rev "1.0")
+		(date "2025-07-26")
+		(rev "1.1")
 	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x05"
@@ -5272,7 +5272,7 @@
 		(uuid "0142b36b-370b-4aa2-ab79-f7ab79cd814e")
 	)
 	(label "BMS_RX"
-		(at 30.48 109.22 0)
+		(at 30.48 106.68 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5392,7 +5392,7 @@
 		(uuid "6e7a2d33-f871-41e7-b7e4-6bce76b0c1e8")
 	)
 	(label "BMS_TX"
-		(at 30.48 106.68 0)
+		(at 30.48 109.22 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5732,7 +5732,7 @@
 				)
 			)
 		)
-		(property "Value" "22K"
+		(property "Value" "15K"
 			(at 267.1064 76.2 90)
 			(effects
 				(font
