@@ -161,7 +161,7 @@ void Balance(uint16_t voltage) {
     EnableBalancers(balancers);
     
     int seconds = 0;
-    int check_interval = 30;
+    int check_interval = 10;
     
     while (!GetBtnState(0) && !GetBtnState(1)) {
         
@@ -185,7 +185,7 @@ void Balance(uint16_t voltage) {
                 }
             }
             if (count == 0)
-                LcdPuts(0, 2, "Finished");
+                LcdPuts(8, 3, "Done.");
             
             EnableBalancers(balancers);
         }
@@ -214,39 +214,58 @@ void Balance(uint16_t voltage) {
 uint16_t InputVoltage() {
     LcdClear();
     LcdPuts(2, 1, "Balance voltage:");
-    LcdPuts(3, 2, "0.000 V");
+    LcdPuts(3, 2, "0.000 V  Start");
     
+    bool start = 0;
     int voltage = 0;
-    int factor = 1000;
     char s[8];
     uint8_t pos = 0;
+    char digits[4];
+    
+    for (int i = 0; i < 4; i++)
+        digits[i] = 0;
+    
     do {
         WaitButtonsReleased();
         strcpy(s, "     ");
-        s[pos] = '^';
+        if (pos < 5) {
+            s[pos] = '^';
+            LcdPuts(12, 3, "     ");
+        } else 
+            LcdPuts(12, 3, "^^^^^");
         LcdPuts(3, 3, s);
         
-        char digit = 0;
-        while (!GetBtnState(1)) {
+        uint8_t dpos = pos;
+        if (dpos > 0) dpos--;
+
+        while (!GetBtnState(0) && !start) {
             WaitForButtonPressed();
-            if (GetBtnState(0)) {
-                digit = (digit + 1) % 10;
-                s[0] = '0' + digit;
-                s[1] = 0;
-                LcdPuts(3 + pos, 2, s);
+            if (GetBtnState(1)) {
+                if (pos < 5) {
+                    digits[dpos] = (digits[dpos] + 1) % 10;
+                    s[0] = '0' + digits[dpos];
+                    s[1] = 0;
+                    LcdPuts(3 + pos, 2, s);
+                } else {
+                    start = 1;
+                }
                 WaitButtonsReleased();
             }
         }
         
-        voltage += digit * factor;
-        factor /= 10;
-        
-        if (pos == 0)
-            pos = 2;
-        else
+        pos++;
+        if (pos == 1)
             pos++;
-    } while (pos < 5);
+        if (pos == 6)
+            pos = 0;
+    } while (!start);
     
+    int factor = 1000;
+    for (int i = 0; i < 4; i++) {
+        voltage += digits[i] * factor;
+        factor /= 10;
+    }
+
     if (voltage > 4175)
         voltage = 4175;
     if (voltage < 3200)
