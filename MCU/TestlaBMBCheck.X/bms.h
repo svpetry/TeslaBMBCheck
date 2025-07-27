@@ -10,8 +10,7 @@
 
 #include "types.h"
 
-#define MAX_MODULE_ADDR 63
-#define MAX_ATTEMPTS 5
+#define CELL_COUNT 6
 
 uint8_t FindBoardId(void);
 bool ResetBoard(void);

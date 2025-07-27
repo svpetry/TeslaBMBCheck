@@ -46,6 +46,8 @@
 
 #define MODULE_ID 3
 #define BMS_POWER_ON_DELAY 4000
+#define BATT_SYMBOL_COUNT 4
+#define BALANCE_CHECK_INTERVAL 5
 
 bool connected = 0;
 
@@ -65,7 +67,7 @@ void Initialize(void) {
 
 void ConnectToBms(uint8_t module_id) {
     LcdClear();
-    LcdPuts(0, 1, "    Connecting...   ");
+    LcdPuts(4, 1, "Connecting...");
     
     connected = 0;
     
@@ -91,12 +93,15 @@ void ConnectToBms(uint8_t module_id) {
 void DisconnectBms() {
     SetBmsPower(0);
     connected = 0;
+    LcdClear();
+    LcdPuts(4, 1, "Disconnected.");
+    __delay_ms(1000);
 }
 
 void ShowBmsData(struct BmsData bms_data, bool show_temp) {
     char s[8];
     
-    for (uint8_t cell = 0; cell < 6; cell++) {
+    for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
         VoltageToStr(s, bms_data.v[cell], 0);
         LcdPuts((cell % 3) * 7, cell / 3, s);
     }
@@ -112,9 +117,9 @@ void ShowBmsData(struct BmsData bms_data, bool show_temp) {
     }
 
     if (BmsFaultActive())
-        LcdPuts(0, 2, "Fault detected.");
+        LcdPuts(0, 2, "\x05\x06 Fault detected.");
     else
-        LcdPuts(0, 2, "               ");
+        LcdPuts(0, 2, "                    ");
 }
 
 void ShowStatus() {
@@ -128,15 +133,19 @@ void ShowStatus() {
     }
 }
 
-void ShowBalanceMarker(uint8_t cell, bool state) {
+void ShowBalanceMarker(uint8_t cell, uint8_t counter, bool state) {
     uint8_t col = (cell % 3) * 7 + 5;
     uint8_t row = cell / 3;
-    LcdPuts(col, row, state ? "!" : " "); // double arrow down
+    
+    // Battery symbols are characters 1 (full), 2, 3 and 4 (empty)
+    char battChar = 1 + counter;
+    
+    LcdPutChar(col, row, state ? battChar : ' ');
 }
 
-void EnableBalancers(bool balancers[6]) {
+void EnableBalancers(bool balancers[CELL_COUNT]) {
     uint8_t bits = 0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < CELL_COUNT; i++) {
         if (balancers[i])
             bits |= 1 << i;
     }
@@ -146,7 +155,8 @@ void EnableBalancers(bool balancers[6]) {
 void Balance(uint16_t voltage) {
     LcdClear();
 
-    bool balancers[6];
+    bool balancers[CELL_COUNT];
+    uint8_t batt_symbol = 0;
     
     char s[8];
     VoltageToStr(s, voltage, 0);
@@ -155,9 +165,9 @@ void Balance(uint16_t voltage) {
     struct BmsData data = ReadBmsData(MODULE_ID);
     ShowBmsData(data, 0);
 
-    for (uint8_t cell = 0; cell < 6; cell++) {
+    for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
         if (data.v[cell] > voltage) {
-            ShowBalanceMarker(cell, 1);
+            ShowBalanceMarker(cell, batt_symbol, 1);
             balancers[cell] = 1;
         } else
             balancers[cell] = 0;
@@ -167,10 +177,9 @@ void Balance(uint16_t voltage) {
     EnableBalancers(balancers);
     
     int seconds = 0;
-    int check_interval = 5;
     
     while (!GetBtnState(0) && !GetBtnState(1)) {
-        if (seconds == check_interval) {
+        if (seconds == BALANCE_CHECK_INTERVAL - 1) {
             EnableBmsBalancers(MODULE_ID, 0);
             __delay_ms(100);
             data = ReadBmsData(MODULE_ID);
@@ -179,7 +188,7 @@ void Balance(uint16_t voltage) {
             __delay_ms(400);
 
             int count = 0;
-            for (uint8_t cell = 0; cell < 6; cell++) {
+            for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
                 if (balancers[cell]) {
                     if (data.v[cell] <= voltage) {
                         balancers[cell] = 0;
@@ -195,17 +204,21 @@ void Balance(uint16_t voltage) {
         } else
             __delay_ms(500);
        
-        for (uint8_t cell = 0; cell < 6; cell++) {
+        for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
-                ShowBalanceMarker(cell, 1);
+                ShowBalanceMarker(cell, batt_symbol, 1);
         }
+        batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
         __delay_ms(500);
 
-        for (uint8_t cell = 0; cell < 6; cell++)
-            ShowBalanceMarker(cell, 0);
+        for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
+            if (balancers[cell])
+                ShowBalanceMarker(cell, batt_symbol, 1);
+        }
+        batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
-        if (seconds == check_interval)
+        if (seconds == BALANCE_CHECK_INTERVAL - 1)
             seconds = 0;
         else
             seconds++;
@@ -219,7 +232,7 @@ void Balance(uint16_t voltage) {
 uint16_t InputVoltage() {
     LcdClear();
     LcdPuts(2, 1, "Balance voltage:");
-    LcdPuts(3, 2, "0.000 V  Start");
+    LcdPuts(3, 2, "3.700 V  Start");
     
     bool start = 0;
     int voltage = 0;
@@ -227,8 +240,10 @@ uint16_t InputVoltage() {
     uint8_t pos = 0;
     char digits[4];
     
-    for (int i = 0; i < 4; i++)
-        digits[i] = 0;
+    digits[0] = 3;
+    digits[1] = 7;
+    digits[2] = 0;
+    digits[3] = 0;
     
     do {
         WaitButtonsReleased();
@@ -296,6 +311,7 @@ void MainMenu() {
         
         if (!connected) {
             LcdPuts(0, 1, "Press SW2 to connect");
+            LcdPuts(0, 3, "TeslaBMBChecker V1.0");
             while (!GetBtnState(1)) {
                 SetLcdBacklight(0);
                 __delay_ms(4);
@@ -324,9 +340,9 @@ void MainMenu() {
                     if (BmsFaultActive() != fault) {
                         fault = BmsFaultActive();
                         if (fault)
-                            LcdPuts(19, 3, "F");
+                            LcdPuts(18, 3, "\x05\x06");
                         else
-                            LcdPuts(19, 3, " ");
+                            LcdPuts(18, 3, "  ");
                     }
                 }
 

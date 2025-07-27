@@ -7,6 +7,9 @@
 #include "lcd.h"
 #include "utils.h"
 
+#define MAX_MODULE_ADDR 63
+#define MAX_ATTEMPTS 5
+
 static const uint16_t temp_table[1024] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
