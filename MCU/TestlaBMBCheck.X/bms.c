@@ -236,3 +236,26 @@ void EnableBmsBalancers(uint8_t module_id, uint8_t balancer_bits) {
     BMS_ShortDelay();
     BMS_GetReply(buff, 30);
 }
+
+void ClearBmsFaults(uint8_t module_id) {
+    uint8_t payload[3];
+    uint8_t buff[8];
+    
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[1] = REG_ALERT_STATUS; // Alert Status
+    payload[2] = 0xFF; // data to cause a reset
+    BMS_SendDataWithReply(payload, 3, 1, buff, 4);
+    
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[2] = 0x00; // data to clear
+    BMS_SendDataWithReply(payload, 3, 1, buff, 4);
+  
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[1] = REG_FAULT_STATUS; // Fault Status
+    payload[2] = 0xFF; // data to cause a reset
+    BMS_SendDataWithReply(payload, 3, 1, buff, 4);
+    
+    payload[0] = (uint8_t)(module_id << 1);
+    payload[2] = 0x00; // data to clear
+    BMS_SendDataWithReply(payload, 3, 1, buff, 4);
+}

@@ -14,6 +14,6 @@ bool GetBtnState(uint8_t id);
 void SetInfoLed(bool state);
 void SetLcdBacklight(bool state);
 void SetBmsPower(bool state);
+bool BmsFaultActive(void);
 
 #endif	/* BOARD_H */
-

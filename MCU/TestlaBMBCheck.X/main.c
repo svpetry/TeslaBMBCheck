@@ -6,7 +6,7 @@
  * pin layout:
  * RA0: SW1 (0 = pressed)
  * RA1: SW2 (0 = pressed)
- * RA2: -
+ * RA2: BMS_FAULT
  * RA3: -
  * RA4: -
  * RA5: -
@@ -50,7 +50,7 @@
 bool connected = 0;
 
 void Initialize(void) {
-    TRISA = 0b11000011;
+    TRISA = 0b11000111;
     LATA = 0;
     TRISB = 0b00000000;
     LATB = 0;
@@ -110,6 +110,11 @@ void ShowBmsData(struct BmsData bms_data, bool show_temp) {
         VoltageToStr(s, bms_data.mv, 1);
         LcdPuts(1, 3, s);
     }
+
+    if (BmsFaultActive())
+        LcdPuts(0, 2, "Fault detected.");
+    else
+        LcdPuts(0, 2, "               ");
 }
 
 void ShowStatus() {
@@ -149,6 +154,7 @@ void Balance(uint16_t voltage) {
     
     struct BmsData data = ReadBmsData(MODULE_ID);
     ShowBmsData(data, 0);
+
     for (uint8_t cell = 0; cell < 6; cell++) {
         if (data.v[cell] > voltage) {
             ShowBalanceMarker(cell, 1);
@@ -161,19 +167,17 @@ void Balance(uint16_t voltage) {
     EnableBalancers(balancers);
     
     int seconds = 0;
-    int check_interval = 10;
+    int check_interval = 5;
     
     while (!GetBtnState(0) && !GetBtnState(1)) {
-        
-        if (seconds == check_interval)
-            EnableBmsBalancers(MODULE_ID, 0);
-        
-        __delay_ms(500);
-
-        data = ReadBmsData(MODULE_ID);
-        ShowBmsData(data, 0);
-        
         if (seconds == check_interval) {
+            EnableBmsBalancers(MODULE_ID, 0);
+            __delay_ms(100);
+            data = ReadBmsData(MODULE_ID);
+            ShowBmsData(data, 0);
+            EnableBalancers(balancers);
+            __delay_ms(400);
+
             int count = 0;
             for (uint8_t cell = 0; cell < 6; cell++) {
                 if (balancers[cell]) {
@@ -188,8 +192,9 @@ void Balance(uint16_t voltage) {
                 LcdPuts(8, 3, "Done.");
             
             EnableBalancers(balancers);
-        }
-        
+        } else
+            __delay_ms(500);
+       
         for (uint8_t cell = 0; cell < 6; cell++) {
             if (balancers[cell])
                 ShowBalanceMarker(cell, 1);
@@ -274,6 +279,16 @@ uint16_t InputVoltage() {
     return (uint16_t)voltage;
 }
 
+void ClearFaults() {
+    LcdClear();
+    WaitButtonsReleased();
+    LcdPuts(1, 1, "Clearing faults...");
+    __delay_ms(200);
+    ClearBmsFaults(MODULE_ID);
+    LcdPuts(7, 2, "Done.");
+    WaitForButtonPressed();
+}
+
 void MainMenu() {
     while (1) {
         LcdClear();
@@ -294,19 +309,33 @@ void MainMenu() {
             }
         } else {
             
-            LcdPuts(0, 0, "> Show BMS values   ");
+            LcdPuts(0, 0, "> Show sensor values");
             LcdPuts(0, 1, "  Start balancing   ");
-            LcdPuts(0, 2, "  Disconnect        ");
+            LcdPuts(0, 2, "  Clear faults      ");
+            LcdPuts(0, 3, "  Disconnect        ");
             
             int menu_idx = 0;
             while (!GetBtnState(1)) {
+                
                 WaitButtonsReleased();
+
+                bool fault = 0;
+                while (!GetBtnState(0) && !GetBtnState(1)) {
+                    if (BmsFaultActive() != fault) {
+                        fault = BmsFaultActive();
+                        if (fault)
+                            LcdPuts(19, 3, "F");
+                        else
+                            LcdPuts(19, 3, " ");
+                    }
+                }
+
                 WaitForButtonPressed();
                 
                 if (GetBtnState(0)) {
-                    menu_idx = (menu_idx + 1) % 3;
+                    menu_idx = (menu_idx + 1) % 4;
 
-                    for (uint8_t i = 0; i < 3; i++) {
+                    for (uint8_t i = 0; i < 4; i++) {
                         LcdPuts(0, i, menu_idx == i ? ">" : " ");
                     }
                 }
@@ -326,6 +355,10 @@ void MainMenu() {
                     break;
                 }
                 case 2: {
+                    ClearFaults();
+                    break;
+                }
+                case 3: {
                     DisconnectBms();
                     break;
                 }

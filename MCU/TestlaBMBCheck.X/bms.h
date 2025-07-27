@@ -18,6 +18,7 @@ bool ResetBoard(void);
 bool SetNewBoardId(uint8_t id);
 struct BmsData ReadBmsData(uint8_t module_id);
 void EnableBmsBalancers(uint8_t module_id, uint8_t balancer_bits);
+void ClearBmsFaults(uint8_t module_id);
 
 #endif	/* BMS_H */
 

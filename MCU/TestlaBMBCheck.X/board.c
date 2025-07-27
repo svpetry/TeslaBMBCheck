@@ -32,3 +32,6 @@ void SetBmsPower(bool state) {
     LATCbits.LATC0 = state ? 0 : 1;
 }
 
+bool BmsFaultActive() {
+    return !PORTAbits.RA2;
+}
