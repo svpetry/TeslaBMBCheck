@@ -45,7 +45,7 @@
 #include "types.h"
 
 #define MODULE_ID 3
-#define BMS_POWER_ON_DELAY 4000
+#define BMS_POWER_ON_DELAY 3000
 #define BATT_SYMBOL_COUNT 4
 #define BALANCE_CHECK_INTERVAL 5
 
@@ -86,7 +86,10 @@ void ConnectToBms(uint8_t module_id) {
         SetBmsPower(0);
         return;
     }
-    
+
+    __delay_ms(100);
+    ClearBmsFaults(MODULE_ID);
+
     connected = 1;
 }
 
@@ -192,6 +195,7 @@ void Balance(uint16_t voltage) {
                 if (balancers[cell]) {
                     if (data.v[cell] <= voltage) {
                         balancers[cell] = 0;
+                        ShowBalanceMarker(cell, batt_symbol, 0);
                         seconds = 0;
                     } else
                       count++;
