@@ -1,5 +1,8 @@
 # TeslaBMBCheck
-Simple device that reads the voltage levels and temperatures from a Tesla Model S BMB board.
+Simple device that reads the voltage levels and temperatures from a Tesla Model S BMB board. It also supports balancing and clearing faults.
+
+![Model S Battery Modules](./Img/Tool1.jpg)
+![Model S Battery Modules](./Img/Tool2.jpg)
 
 ## Module Locations
 
