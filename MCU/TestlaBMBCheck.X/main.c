@@ -32,7 +32,7 @@
  */
 
 #include <xc.h>
-#include <pic18f2480.h>
+#include <pic18f2455.h>
 #include <string.h>
 #include "config.h"
 #include "base.h"
