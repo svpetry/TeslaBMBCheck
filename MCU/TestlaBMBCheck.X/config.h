@@ -1,5 +1,5 @@
 
-// PIC18F2480 Configuration Bit Settings
+// PIC18F2420 Configuration Bit Settings
 
 // 'C' source line config statements
 
@@ -25,7 +25,6 @@
 // CONFIG4L
 #pragma config STVREN = OFF     // Stack Full/Underflow Reset Enable bit (Stack full/underflow will not cause Reset)
 #pragma config LVP = OFF        // Single-Supply ICSP Enable bit (Single-Supply ICSP disabled)
-#pragma config BBSIZ = 1024     // Boot Block Size Select bit (1K words (2K bytes) boot block)
 #pragma config XINST = OFF      // Extended Instruction Set Enable bit (Instruction set extension and Indexed Addressing mode disabled (Legacy mode))
 
 // CONFIG5L

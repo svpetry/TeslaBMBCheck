@@ -1,6 +1,6 @@
 #include <xc.h>
 #include <pic18.h>
-#include <pic18f2480.h>
+#include <pic18f2420.h>
 #include "base.h"
 
 #include "uart.h"
