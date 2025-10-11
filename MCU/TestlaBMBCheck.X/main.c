@@ -13,9 +13,9 @@
  * RA6: OSC2
  * RA7: OSC1
  * RC0: BMS_POWER_ON (0 = active)
- * RC1: LCD BACKLIGHT
- * RC2: INFO LED
- * RC3: -
+ * RC1: LCD backlight
+ * RC2: Info LED
+ * RC3: Charging relais
  * RC4: -
  * RC5: -
  * RC6: TX
@@ -44,10 +44,15 @@
 #include "board.h"
 #include "types.h"
 
+#define ENABLE_CHARGING 1
+
 #define MODULE_ID 3
 #define BMS_POWER_ON_DELAY 3000
 #define BATT_SYMBOL_COUNT 4
-#define BALANCE_CHECK_INTERVAL 5
+#define VOLTAGE_CHECK_INTERVAL 5
+#define CHARGE_CHECK_INTERVAL 60
+#define MIN_CELL_VOLTAGE 2800
+#define MAX_CELL_VOLTAGE 4175
 
 bool connected = 0;
 
@@ -136,7 +141,7 @@ void ShowStatus() {
     }
 }
 
-void ShowBalanceMarker(uint8_t cell, uint8_t counter, bool state) {
+void ShowBatterySymbol(uint8_t cell, uint8_t counter, bool state) {
     uint8_t col = (cell % 3) * 7 + 5;
     uint8_t row = cell / 3;
     
@@ -170,19 +175,18 @@ void Balance(uint16_t voltage) {
 
     for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
         if (data.v[cell] > voltage) {
-            ShowBalanceMarker(cell, batt_symbol, 1);
+            ShowBatterySymbol(cell, batt_symbol, 1);
             balancers[cell] = 1;
         } else
             balancers[cell] = 0;
     }
     
-    WaitButtonsReleased();
     EnableBalancers(balancers);
     
     int seconds = 0;
     
     while (!GetBtnState(0) && !GetBtnState(1)) {
-        if (seconds == BALANCE_CHECK_INTERVAL - 1) {
+        if (seconds == VOLTAGE_CHECK_INTERVAL - 1) {
             EnableBmsBalancers(MODULE_ID, 0);
             __delay_ms(100);
             data = ReadBmsData(MODULE_ID);
@@ -195,8 +199,7 @@ void Balance(uint16_t voltage) {
                 if (balancers[cell]) {
                     if (data.v[cell] <= voltage) {
                         balancers[cell] = 0;
-                        ShowBalanceMarker(cell, batt_symbol, 0);
-                        seconds = 0;
+                        ShowBatterySymbol(cell, batt_symbol, 0);
                     } else
                       count++;
                 }
@@ -210,7 +213,7 @@ void Balance(uint16_t voltage) {
        
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
-                ShowBalanceMarker(cell, batt_symbol, 1);
+                ShowBatterySymbol(cell, batt_symbol, 1);
         }
         batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
@@ -218,11 +221,11 @@ void Balance(uint16_t voltage) {
 
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
-                ShowBalanceMarker(cell, batt_symbol, 1);
+                ShowBatterySymbol(cell, batt_symbol, 1);
         }
         batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
-        if (seconds == BALANCE_CHECK_INTERVAL - 1)
+        if (seconds == VOLTAGE_CHECK_INTERVAL - 1)
             seconds = 0;
         else
             seconds++;
@@ -230,12 +233,71 @@ void Balance(uint16_t voltage) {
     EnableBmsBalancers(MODULE_ID, 0);
 
     LcdClear();
-    WaitForButtonPressed();
+    WaitButtonsReleased();
+}
+
+void Charge(uint16_t voltage) {
+    LcdClear();
+    
+    uint8_t batt_symbol = BATT_SYMBOL_COUNT - 1;
+
+    char s[8];
+    VoltageToStr(s, voltage, 0);
+    LcdPuts(14, 3, s);
+
+    struct BmsData data = ReadBmsData(MODULE_ID);
+    ShowBmsData(data, 0);
+    
+    int seconds = 0;
+    bool abort = 0;
+
+    if (data.v_min < voltage) {
+        while (!abort) {
+
+            if (seconds % VOLTAGE_CHECK_INTERVAL == 0) {
+                data = ReadBmsData(MODULE_ID);
+                ShowBmsData(data, 0);
+            }
+
+            if (seconds == 0) {
+                SetChargeRelais(0);
+                __delay_ms(500);
+                data = ReadBmsData(MODULE_ID);
+                if (data.v_min == voltage + 1)
+                    break;
+                SetChargeRelais(1);
+            } else
+                __delay_ms(500);
+            
+            for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
+                ShowBatterySymbol(cell, batt_symbol, 1);
+            batt_symbol = (batt_symbol - 1) % BATT_SYMBOL_COUNT;
+            
+            __delay_ms(500);
+
+            for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
+                ShowBatterySymbol(cell, batt_symbol, 1);
+            batt_symbol = (batt_symbol - 1) % BATT_SYMBOL_COUNT;
+
+            if (seconds == CHARGE_CHECK_INTERVAL - 1)
+                seconds = 0;
+            else
+                seconds++;
+        }
+        SetChargeRelais(0);
+    }
+    
+    if (!abort)
+        Balance(voltage);
+    else {
+        LcdClear();
+        WaitButtonsReleased();
+    }
 }
 
 uint16_t InputVoltage() {
     LcdClear();
-    LcdPuts(2, 1, "Balance voltage:");
+    LcdPuts(2, 1, "Target voltage:");
     LcdPuts(3, 2, "3.700 V  Start");
     
     bool start = 0;
@@ -290,11 +352,12 @@ uint16_t InputVoltage() {
         factor /= 10;
     }
 
-    if (voltage > 4175)
-        voltage = 4175;
-    if (voltage < 3200)
-        voltage = 3200;
+    if (voltage > MAX_CELL_VOLTAGE)
+        voltage = MAX_CELL_VOLTAGE;
+    if (voltage < MIN_CELL_VOLTAGE)
+        voltage = MIN_CELL_VOLTAGE;
     
+    WaitButtonsReleased();
     return (uint16_t)voltage;
 }
 
@@ -330,7 +393,11 @@ void MainMenu() {
         } else {
             
             LcdPuts(0, 0, "> Show sensor values");
-            LcdPuts(0, 1, "  Start balancing   ");
+#if ENABLE_CHARGING
+            LcdPuts(0, 1, "  Balance charge    ");
+#else
+            LcdPuts(0, 1, "  Balance           ");
+#endif
             LcdPuts(0, 2, "  Clear faults      ");
             LcdPuts(0, 3, "  Disconnect        ");
             
@@ -344,7 +411,7 @@ void MainMenu() {
                     if (BmsFaultActive() != fault) {
                         fault = BmsFaultActive();
                         if (fault)
-                            LcdPuts(18, 3, "\x05\x06");
+                            LcdPuts(18, 3, "\x05\x06"); // Warning sign
                         else
                             LcdPuts(18, 3, "  ");
                     }
@@ -371,7 +438,11 @@ void MainMenu() {
                 }
                 case 1: {
                     uint16_t voltage = InputVoltage();
+#if ENABLE_CHARGING
+                    Charge(voltage);
+#else
                     Balance(voltage);
+#endif
                     break;
                 }
                 case 2: {
