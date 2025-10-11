@@ -37,5 +37,5 @@ bool BmsFaultActive() {
 }
 
 void SetChargeRelais(bool state) {
-    LATCbits.LATC3 = state ? 0 : 1;
+    LATCbits.LATC3 = state;
 }

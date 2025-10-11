@@ -44,7 +44,7 @@
 #include "board.h"
 #include "types.h"
 
-#define ENABLE_CHARGING 1
+#define ENABLE_CHARGING 0
 
 #define MODULE_ID 3
 #define BMS_POWER_ON_DELAY 3000
@@ -253,7 +253,6 @@ void Charge(uint16_t voltage) {
 
     if (data.v_min < voltage) {
         while (!abort) {
-
             if (seconds % VOLTAGE_CHECK_INTERVAL == 0) {
                 data = ReadBmsData(MODULE_ID);
                 ShowBmsData(data, 0);
@@ -263,7 +262,7 @@ void Charge(uint16_t voltage) {
                 SetChargeRelais(0);
                 __delay_ms(500);
                 data = ReadBmsData(MODULE_ID);
-                if (data.v_min == voltage + 1)
+                if (data.v_min > voltage)
                     break;
                 SetChargeRelais(1);
             } else
@@ -283,6 +282,9 @@ void Charge(uint16_t voltage) {
                 seconds = 0;
             else
                 seconds++;
+
+            if (GetBtnState(0) || GetBtnState(1))
+                abort = 1;
         }
         SetChargeRelais(0);
     }
@@ -378,7 +380,7 @@ void MainMenu() {
         
         if (!connected) {
             LcdPuts(0, 1, "Press SW2 to connect");
-            LcdPuts(0, 3, "TeslaBMBChecker V1.0");
+            LcdPuts(0, 3, "TeslaBMBChecker V1.1");
             while (!GetBtnState(1)) {
                 SetLcdBacklight(0);
                 __delay_ms(4);
