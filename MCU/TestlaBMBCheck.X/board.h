@@ -15,5 +15,6 @@ void SetInfoLed(bool state);
 void SetLcdBacklight(bool state);
 void SetBmsPower(bool state);
 bool BmsFaultActive(void);
+void SetChargeRelais(bool state);
 
 #endif	/* BOARD_H */

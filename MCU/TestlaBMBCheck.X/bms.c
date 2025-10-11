@@ -10,6 +10,7 @@
 #define MAX_MODULE_ADDR 63
 #define MAX_ATTEMPTS 5
 
+// Lookup table for temperature calculation
 static const uint16_t temp_table[1024] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -205,14 +206,22 @@ struct BmsData ReadBmsData(uint8_t module_id) {
     // Also validate CRC to ensure we didn't get garbage data.
     if ((retLen == 22) && (buff[21] == calcCRC)) {
         if (buff[0] == (module_id << 1) && buff[1] == REG_GPAI && buff[2] == 0x12) { // Also ensure this is actually the reply to our intended query
-            
+            uint16_t cv, v_max = 0, v_min = 9999;
+
             // payload is 2 bytes QPAI, 2 bytes for each of 6 cell voltages, 2 bytes for each of two temperatures (18 bytes of data)
             cellVolt = (uint16_t)buff[3] * 256 + (uint16_t)buff[4];
             data.mv = (uint16_t)(((uint32_t)cellVolt * 133340U) >> 16); // * 2.034609f
             for (int i = 0; i < 6; i++) {
                 cellVolt = (uint16_t)buff[5 + (i * 2)] * 256 + (uint16_t)buff[6 + (i * 2)];
-                data.v[i] = (uint16_t)(((uint32_t)cellVolt * 50003U) >> 17); // * 0.381493f
+                cv = (uint16_t)(((uint32_t)cellVolt * 50003U) >> 17); // * 0.381493f
+                data.v[i] = cv;
+                if (v_max < cv)
+                    v_max = cv;
+                if (v_min > cv)
+                    v_min = cv;
             }
+            data.v_min = v_min;
+            data.v_max = v_max;
             data.t[0] = CalcTemp(buff, 17);
             data.t[1] = CalcTemp(buff, 19);
         }        
