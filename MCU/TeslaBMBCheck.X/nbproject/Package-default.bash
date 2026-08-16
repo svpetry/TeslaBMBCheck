@@ -10,9 +10,9 @@ CND_CONF=default
 CND_DISTDIR=dist
 TMPDIR=build/${CND_CONF}/${IMAGE_TYPE}/tmp-packaging
 TMPDIRNAME=tmp-packaging
-OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/TestlaBMBCheck.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-OUTPUT_BASENAME=TestlaBMBCheck.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-PACKAGE_TOP_DIR=testlabmbcheck.x/
+OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/TeslaBMBCheck.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+OUTPUT_BASENAME=TeslaBMBCheck.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+PACKAGE_TOP_DIR=teslabmbcheck.x/
 
 # Functions
 function checkReturnCode
@@ -57,15 +57,15 @@ mkdir -p ${TMPDIR}
 
 # Copy files and create directories and links
 cd "${TOP}"
-makeDirectory ${TMPDIR}/testlabmbcheck.x/bin
+makeDirectory ${TMPDIR}/teslabmbcheck.x/bin
 copyFileToTmpDir "${OUTPUT_PATH}" "${TMPDIR}/${PACKAGE_TOP_DIR}bin/${OUTPUT_BASENAME}" 0755
 
 
 # Generate tar file
 cd "${TOP}"
-rm -f ${CND_DISTDIR}/${CND_CONF}/package/testlabmbcheck.x.tar
+rm -f ${CND_DISTDIR}/${CND_CONF}/package/teslabmbcheck.x.tar
 cd ${TMPDIR}
-tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/testlabmbcheck.x.tar *
+tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/teslabmbcheck.x.tar *
 checkReturnCode
 
 # Cleanup

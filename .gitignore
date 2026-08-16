@@ -1,8 +1,8 @@
-MCU/TestlaBMBCheck.X/build/
-MCU/TestlaBMBCheck.X/dist/
+MCU/TeslaBMBCheck.X/build/
+MCU/TeslaBMBCheck.X/dist/
 Board/TeslaBMBCheck/TeslaBMBCheck-backups/
 Board/TeslaBMBCheck/fp-info-cache
-MCU/TestlaBMBCheck.X/nbproject/private/
+MCU/TeslaBMBCheck.X/nbproject/private/
 Board/TeslaBMBCheck/~*
 Tools/MakeSHTable/MakeSHTable/obj/
 Tools/MakeSHTable/MakeSHTable/bin/

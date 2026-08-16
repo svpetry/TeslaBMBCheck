@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=TestlaBMBCheck.X
+PROJECTNAME=TeslaBMBCheck.X
 
 # Active Configuration
 DEFAULTCONF=default

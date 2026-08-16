@@ -3,7 +3,7 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>TestlaBMBCheck</name>
+            <name>TeslaBMBCheck</name>
             <creation-uuid>cbbedb63-20e6-4fbd-8ab2-e7d8fca17cc7</creation-uuid>
             <make-project-type>0</make-project-type>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
