@@ -53,6 +53,7 @@
 #define CHARGE_CHECK_INTERVAL 60
 #define MIN_CELL_VOLTAGE 2800
 #define MAX_CELL_VOLTAGE 4175
+#define CELL_CHARGE_TRESHOLD 2
 
 bool connected = 0;
 
@@ -237,6 +238,7 @@ void Balance(uint16_t voltage) {
 }
 
 void Charge(uint16_t voltage) {
+    SetChargeRelais(0);
     LcdClear();
     
     uint8_t batt_symbol = BATT_SYMBOL_COUNT - 1;
@@ -249,20 +251,28 @@ void Charge(uint16_t voltage) {
     ShowBmsData(data, 0);
     
     int seconds = 0;
-    bool abort = 0;
+    bool abort = data.v_min == 0;
 
-    if (data.v_min < voltage) {
+    if (!abort && data.v_min < voltage) {
         while (!abort) {
             if (seconds % VOLTAGE_CHECK_INTERVAL == 0) {
                 data = ReadBmsData(MODULE_ID);
                 ShowBmsData(data, 0);
+                if (data.v_min == 0) {
+                    abort = 1;
+                    break;
+                }
             }
 
             if (seconds == 0) {
                 SetChargeRelais(0);
                 __delay_ms(500);
                 data = ReadBmsData(MODULE_ID);
-                if (data.v_min > voltage)
+                if (data.v_min == 0) {
+                    abort = 1;
+                    break;
+                }
+                if (data.v_min >= voltage + CELL_CHARGE_TRESHOLD)
                     break;
                 SetChargeRelais(1);
             } else
@@ -286,8 +296,8 @@ void Charge(uint16_t voltage) {
             if (GetBtnState(0) || GetBtnState(1))
                 abort = 1;
         }
-        SetChargeRelais(0);
     }
+    SetChargeRelais(0);
     
     if (!abort)
         Balance(voltage);
