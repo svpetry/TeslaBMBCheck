@@ -54,8 +54,71 @@
 #define MIN_CELL_VOLTAGE 2800
 #define MAX_CELL_VOLTAGE 4175
 #define CELL_CHARGE_TRESHOLD 2
+#define DEFAULT_CELL_VOLTAGE 3700
+
+// Each setting occupies three EEPROM bytes: valid marker, low byte, high byte.
+#define BALANCE_VOLTAGE_EEPROM_ADDRESS 0
+#define CHARGE_VOLTAGE_EEPROM_ADDRESS 3
+#define VOLTAGE_SETTING_VALID 0xA5
 
 bool connected = 0;
+
+static uint8_t ReadEeprom(uint8_t address) {
+    while (EECON1bits.WR);
+    EEADR = address;
+    EECON1bits.EEPGD = 0;
+    EECON1bits.CFGS = 0;
+    EECON1bits.RD = 1;
+    return EEDATA;
+}
+
+static void WriteEeprom(uint8_t address, uint8_t value) {
+    if (ReadEeprom(address) == value)
+        return;
+
+    EEADR = address;
+    EEDATA = value;
+    EECON1bits.EEPGD = 0;
+    EECON1bits.CFGS = 0;
+    EECON1bits.WREN = 1;
+
+    // Only the unlock sequence needs to block the UART receive interrupt.
+    bool interrupts_enabled = INTCONbits.GIE;
+    INTCONbits.GIE = 0;
+    EECON2 = 0x55;
+    EECON2 = 0xAA;
+    EECON1bits.WR = 1;
+    INTCONbits.GIE = interrupts_enabled;
+
+    while (EECON1bits.WR);
+    EECON1bits.WREN = 0;
+    PIR2bits.EEIF = 0;
+}
+
+static uint16_t LoadVoltageSetting(uint8_t address) {
+    if (ReadEeprom(address) != VOLTAGE_SETTING_VALID)
+        return DEFAULT_CELL_VOLTAGE;
+
+    uint16_t voltage = ReadEeprom(address + 1);
+    voltage |= (uint16_t)ReadEeprom(address + 2) << 8;
+    if (voltage < MIN_CELL_VOLTAGE || voltage > MAX_CELL_VOLTAGE)
+        return DEFAULT_CELL_VOLTAGE;
+
+    return voltage;
+}
+
+static void SaveVoltageSetting(uint8_t address, uint16_t voltage) {
+    if (ReadEeprom(address) == VOLTAGE_SETTING_VALID &&
+            ReadEeprom(address + 1) == (uint8_t)voltage &&
+            ReadEeprom(address + 2) == (uint8_t)(voltage >> 8))
+        return;
+
+    // Commit the marker last so an interrupted update is not loaded as a voltage.
+    WriteEeprom(address, 0);
+    WriteEeprom(address + 1, (uint8_t)voltage);
+    WriteEeprom(address + 2, (uint8_t)(voltage >> 8));
+    WriteEeprom(address, VOLTAGE_SETTING_VALID);
+}
 
 void Initialize(void) {
     TRISA = 0b11000111;
@@ -306,10 +369,11 @@ void Charge(uint16_t voltage) {
     }
 }
 
-uint16_t InputVoltage() {
+uint16_t InputVoltage(uint8_t settings_address) {
+    uint16_t initial_voltage = LoadVoltageSetting(settings_address);
     LcdClear();
     LcdPuts(2, 1, "Target voltage:");
-    LcdPuts(3, 2, "3.700 V  Start");
+    LcdPuts(8, 2, " V  Start");
     
     bool start = 0;
     int voltage = 0;
@@ -317,10 +381,12 @@ uint16_t InputVoltage() {
     uint8_t pos = 0;
     char digits[4];
     
-    digits[0] = 3;
-    digits[1] = 7;
-    digits[2] = 0;
-    digits[3] = 0;
+    VoltageToStr(s, initial_voltage, 0);
+    LcdPuts(3, 2, s);
+    digits[0] = initial_voltage / 1000;
+    digits[1] = (initial_voltage / 100) % 10;
+    digits[2] = (initial_voltage / 10) % 10;
+    digits[3] = initial_voltage % 10;
     
     do {
         WaitButtonsReleased();
@@ -368,6 +434,7 @@ uint16_t InputVoltage() {
     if (voltage < MIN_CELL_VOLTAGE)
         voltage = MIN_CELL_VOLTAGE;
     
+    SaveVoltageSetting(settings_address, (uint16_t)voltage);
     WaitButtonsReleased();
     return (uint16_t)voltage;
 }
@@ -448,10 +515,11 @@ void MainMenu() {
                     break;
                 }
                 case 1: {
-                    uint16_t voltage = InputVoltage();
 #if ENABLE_CHARGING
+                    uint16_t voltage = InputVoltage(CHARGE_VOLTAGE_EEPROM_ADDRESS);
                     Charge(voltage);
 #else
+                    uint16_t voltage = InputVoltage(BALANCE_VOLTAGE_EEPROM_ADDRESS);
                     Balance(voltage);
 #endif
                     break;
