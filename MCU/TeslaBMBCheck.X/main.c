@@ -512,7 +512,7 @@ void MainMenu() {
         
         if (!connected) {
             LcdPuts(0, 1, "Press SW2 to connect");
-            LcdPuts(0, 3, "TeslaBMBChecker V1.1");
+            LcdPuts(0, 3, "TeslaBMBChecker V1.2");
             while (!GetBtnState(1)) {
                 SetLcdBacklight(0);
                 __delay_ms(4);
