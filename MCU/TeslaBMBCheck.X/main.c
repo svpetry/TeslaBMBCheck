@@ -304,9 +304,11 @@ void Balance(uint16_t voltage) {
 
 void Charge(uint16_t voltage) {
     SetChargeRelais(0);
+    EnableBmsBalancers(MODULE_ID, 0);
     LcdClear();
     
     uint8_t batt_symbol = BATT_SYMBOL_COUNT - 1;
+    bool balancers[CELL_COUNT] = {0};
 
     char s[8];
     VoltageToStr(s, voltage, 0);
@@ -320,34 +322,48 @@ void Charge(uint16_t voltage) {
 
     if (!abort && data.v_min < voltage) {
         while (!abort) {
-            if (seconds % VOLTAGE_CHECK_INTERVAL == 0) {
+            bool check_voltage = seconds % VOLTAGE_CHECK_INTERVAL == 0;
+            if (check_voltage) {
+                if (seconds == 0)
+                    SetChargeRelais(0);
+
+                // Let cell voltages settle without the balancing load.
+                EnableBmsBalancers(MODULE_ID, 0);
+                DelayBtnCheck(seconds == 0 ? 500 : 100, &abort);
+                if (abort)
+                    break;
+
                 data = ReadBmsData(MODULE_ID);
                 ShowBmsData(data, 0);
                 if (data.v_min == 0) {
                     abort = 1;
                     break;
                 }
+                if (seconds == 0 && data.v_min >= voltage + CELL_CHARGE_TRESHOLD)
+                    break;
+
+                for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
+                    balancers[cell] = data.v[cell] > voltage;
+
+                if (seconds == 0)
+                    SetChargeRelais(1);
             }
 
-            if (seconds == 0) {
-                SetChargeRelais(0);
-                DelayBtnCheck(500, &abort);
-                data = ReadBmsData(MODULE_ID);
-                if (data.v_min == 0) {
-                    abort = 1;
+            // Refresh every second so balancing does not time out between readings.
+            EnableBalancers(balancers);
+            if (seconds != 0) {
+                DelayBtnCheck(check_voltage ? 400 : 500, &abort);
+                if (abort)
                     break;
-                }
-                if (data.v_min >= voltage + CELL_CHARGE_TRESHOLD)
-                    break;
-                SetChargeRelais(1);
-            } else
-                DelayBtnCheck(500, &abort);
+            }
             
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
                 ShowBatterySymbol(cell, batt_symbol, 1);
             batt_symbol = (batt_symbol - 1) % BATT_SYMBOL_COUNT;
             
             DelayBtnCheck(500, &abort);
+            if (abort)
+                break;
 
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
                 ShowBatterySymbol(cell, batt_symbol, 1);
@@ -360,6 +376,7 @@ void Charge(uint16_t voltage) {
         }
     }
     SetChargeRelais(0);
+    EnableBmsBalancers(MODULE_ID, 0);
     
     if (!abort)
         Balance(voltage);
