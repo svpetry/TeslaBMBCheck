@@ -135,10 +135,11 @@ void ShowStatus() {
     LcdClear();
     LcdPuts(0, 3, "T1");
     LcdPuts(10, 3, "T2");
-    while (!GetBtnState(0) && !GetBtnState(1)) {
+    bool abort = 0;
+    while (!abort) {
         struct BmsData data = ReadBmsData(MODULE_ID);
         ShowBmsData(data, 1);
-        __delay_ms(1000);
+        DelayBtnCheck(1000, &abort);
     }
 }
 
@@ -185,15 +186,16 @@ void Balance(uint16_t voltage) {
     EnableBalancers(balancers);
     
     int seconds = 0;
+    bool abort = 0;
     
-    while (!GetBtnState(0) && !GetBtnState(1)) {
+    while (!abort) {
         if (seconds == VOLTAGE_CHECK_INTERVAL - 1) {
             EnableBmsBalancers(MODULE_ID, 0);
-            __delay_ms(100);
+            DelayBtnCheck(100, &abort);
             data = ReadBmsData(MODULE_ID);
             ShowBmsData(data, 0);
             EnableBalancers(balancers);
-            __delay_ms(400);
+            DelayBtnCheck(400, &abort);
 
             int count = 0;
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
@@ -210,7 +212,7 @@ void Balance(uint16_t voltage) {
             
             EnableBalancers(balancers);
         } else
-            __delay_ms(500);
+            DelayBtnCheck(500, &abort);
        
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
@@ -218,7 +220,7 @@ void Balance(uint16_t voltage) {
         }
         batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
-        __delay_ms(500);
+        DelayBtnCheck(500, &abort);
 
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
@@ -266,7 +268,7 @@ void Charge(uint16_t voltage) {
 
             if (seconds == 0) {
                 SetChargeRelais(0);
-                __delay_ms(500);
+                DelayBtnCheck(500, &abort);
                 data = ReadBmsData(MODULE_ID);
                 if (data.v_min == 0) {
                     abort = 1;
@@ -276,13 +278,13 @@ void Charge(uint16_t voltage) {
                     break;
                 SetChargeRelais(1);
             } else
-                __delay_ms(500);
+                DelayBtnCheck(500, &abort);
             
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
                 ShowBatterySymbol(cell, batt_symbol, 1);
             batt_symbol = (batt_symbol - 1) % BATT_SYMBOL_COUNT;
             
-            __delay_ms(500);
+            DelayBtnCheck(500, &abort);
 
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++)
                 ShowBatterySymbol(cell, batt_symbol, 1);
@@ -292,9 +294,6 @@ void Charge(uint16_t voltage) {
                 seconds = 0;
             else
                 seconds++;
-
-            if (GetBtnState(0) || GetBtnState(1))
-                abort = 1;
         }
     }
     SetChargeRelais(0);

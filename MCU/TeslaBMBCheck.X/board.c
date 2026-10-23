@@ -13,6 +13,15 @@ void WaitForButtonPressed() {
     while (PORTAbits.RA0 && PORTAbits.RA1) ;
 }
 
+void DelayBtnCheck(uint16_t ms, bool *pressed) {
+    while (ms > 0) {
+        __delay_ms(10);
+        if (GetBtnState(0) || GetBtnState(1))
+            *pressed = 1;
+        ms -= 10;
+    }
+}
+
 bool GetBtnState(uint8_t id) {
     if (id == 0)
         return !PORTAbits.RA0;

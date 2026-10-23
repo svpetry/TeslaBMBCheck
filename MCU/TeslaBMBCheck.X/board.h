@@ -10,6 +10,7 @@
 
 void WaitButtonsReleased(void);
 void WaitForButtonPressed(void);
+void DelayBtnCheck(uint16_t, bool *);
 bool GetBtnState(uint8_t id);
 void SetInfoLed(bool state);
 void SetLcdBacklight(bool state);
