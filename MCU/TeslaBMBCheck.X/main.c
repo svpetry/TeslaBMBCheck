@@ -225,7 +225,7 @@ void EnableBalancers(bool balancers[CELL_COUNT]) {
     EnableBmsBalancers(MODULE_ID, bits);
 }
 
-void Balance(uint16_t voltage) {
+static bool BalanceCells(uint16_t voltage, bool stop_when_done) {
     LcdClear();
 
     bool balancers[CELL_COUNT];
@@ -237,11 +237,14 @@ void Balance(uint16_t voltage) {
     
     struct BmsData data = ReadBmsData(MODULE_ID);
     ShowBmsData(data, 0);
+    bool abort = data.v_min == 0;
+    int count = 0;
 
     for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
-        if (data.v[cell] > voltage) {
+        if (!abort && data.v[cell] > voltage) {
             ShowBatterySymbol(cell, batt_symbol, 1);
             balancers[cell] = 1;
+            count++;
         } else
             balancers[cell] = 0;
     }
@@ -249,18 +252,21 @@ void Balance(uint16_t voltage) {
     EnableBalancers(balancers);
     
     int seconds = 0;
-    bool abort = 0;
     
-    while (!abort) {
+    while (!abort && (!stop_when_done || count > 0)) {
         if (seconds == VOLTAGE_CHECK_INTERVAL - 1) {
             EnableBmsBalancers(MODULE_ID, 0);
             DelayBtnCheck(100, &abort);
+            if (abort)
+                break;
             data = ReadBmsData(MODULE_ID);
             ShowBmsData(data, 0);
-            EnableBalancers(balancers);
-            DelayBtnCheck(400, &abort);
+            if (data.v_min == 0) {
+                abort = 1;
+                break;
+            }
 
-            int count = 0;
+            count = 0;
             for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
                 if (balancers[cell]) {
                     if (data.v[cell] <= voltage) {
@@ -274,8 +280,11 @@ void Balance(uint16_t voltage) {
                 LcdPuts(8, 3, "Done.");
             
             EnableBalancers(balancers);
+            DelayBtnCheck(400, &abort);
         } else
             DelayBtnCheck(500, &abort);
+        if (abort)
+            break;
        
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
@@ -284,6 +293,8 @@ void Balance(uint16_t voltage) {
         batt_symbol = (batt_symbol + 1) % BATT_SYMBOL_COUNT;
 
         DelayBtnCheck(500, &abort);
+        if (abort)
+            break;
 
         for (uint8_t cell = 0; cell < CELL_COUNT; cell++) {
             if (balancers[cell])
@@ -297,12 +308,16 @@ void Balance(uint16_t voltage) {
             seconds++;
     }
     EnableBmsBalancers(MODULE_ID, 0);
+    return !abort;
+}
 
+void Balance(uint16_t voltage) {
+    BalanceCells(voltage, 0);
     LcdClear();
     WaitButtonsReleased();
 }
 
-void Charge(uint16_t voltage) {
+static bool ChargeCells(uint16_t voltage) {
     SetChargeRelais(0);
     EnableBmsBalancers(MODULE_ID, 0);
     LcdClear();
@@ -377,13 +392,37 @@ void Charge(uint16_t voltage) {
     }
     SetChargeRelais(0);
     EnableBmsBalancers(MODULE_ID, 0);
-    
-    if (!abort)
-        Balance(voltage);
-    else {
-        LcdClear();
-        WaitButtonsReleased();
+    return !abort;
+}
+
+void Charge(uint16_t voltage) {
+    bool abort = 0;
+    while (!abort) {
+        if (!ChargeCells(voltage) || !BalanceCells(voltage, 1))
+            break;
+
+        LcdPuts(8, 3, "Done.");
+        // Keep both loads off while the cells settle and monitor for a voltage drop.
+        while (!abort) {
+            DelayBtnCheck(VOLTAGE_CHECK_INTERVAL * 1000, &abort);
+            if (abort)
+                break;
+
+            struct BmsData data = ReadBmsData(MODULE_ID);
+            ShowBmsData(data, 0);
+            if (data.v_min == 0) {
+                abort = 1;
+                break;
+            }
+            if (data.v_min < voltage)
+                break;
+        }
     }
+
+    SetChargeRelais(0);
+    EnableBmsBalancers(MODULE_ID, 0);
+    LcdClear();
+    WaitButtonsReleased();
 }
 
 uint16_t InputVoltage(uint8_t settings_address) {
